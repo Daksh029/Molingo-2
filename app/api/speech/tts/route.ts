@@ -17,14 +17,12 @@ export async function POST(request: Request) {
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      const silent = new Uint8Array([73, 68, 51, 3, 0, 0, 0, 0, 0, 0]);
-      return new NextResponse(silent, {
-        status: 200,
-        headers: {
-          "Content-Type": "audio/mpeg",
-          "Cache-Control": "no-store"
-        }
-      });
+      return NextResponse.json(
+        {
+          error: "OPENAI_API_KEY is missing. Client should use browser speech synthesis fallback."
+        },
+        { status: 503 }
+      );
     }
 
     const audio = await synthesizeGujaratiSpeech(lesson.target_audio_text);

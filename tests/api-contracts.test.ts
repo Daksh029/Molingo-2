@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { GET as getLessonsByUnitRoute } from "@/app/api/lessons/[unitId]/route";
+import { POST as saveQuizRoute } from "@/app/api/progress/quiz/route";
 import { POST as evaluateSpeechRoute } from "@/app/api/speech/evaluate/route";
 
 describe("api contract checks", () => {
@@ -37,5 +38,17 @@ describe("api contract checks", () => {
     expect(body.status).toBe("pass");
     expect(body.confidence).toBeGreaterThanOrEqual(0.88);
     expect(body.transcript).toBe("kem cho");
+  });
+
+  it("stores quiz results for valid checkpoint payload", async () => {
+    const response = await saveQuizRoute(
+      new Request("http://localhost/api/progress/quiz", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-learner-id": "api-test-user" },
+        body: JSON.stringify({ lessonItemId: "u1-l05", unitId: 1, isCorrect: true })
+      })
+    );
+
+    expect(response.status).toBe(200);
   });
 });

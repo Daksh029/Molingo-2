@@ -67,6 +67,244 @@ main {
   animation: pop-in 0.35s ease-out both;
 }
 
+@keyframes mascot-bob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+.mascot-bounce {
+  animation: mascot-bob 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 rgba(67, 176, 74, 0);
+  }
+
+  50% {
+    box-shadow: 0 0 16px rgba(67, 176, 74, 0.22);
+  }
+}
+
+@keyframes step-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes confetti-fall {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -24vh, 0) rotate(0deg);
+  }
+
+  20% {
+    opacity: 1;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate3d(var(--confetti-drift, 0px), 120vh, 0) rotate(500deg);
+  }
+}
+
+.lesson-shell::before,
+.lesson-shell::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.lesson-shell::before {
+  width: 140px;
+  height: 140px;
+  right: -44px;
+  top: -42px;
+  background: radial-gradient(circle, rgba(255, 216, 95, 0.75), rgba(255, 216, 95, 0));
+}
+
+.lesson-shell::after {
+  width: 160px;
+  height: 160px;
+  left: -54px;
+  bottom: -64px;
+  background: radial-gradient(circle, rgba(28, 176, 246, 0.45), rgba(28, 176, 246, 0));
+}
+
+.lesson-shell > * {
+  position: relative;
+  z-index: 1;
+}
+
+.lesson-mascot-panel {
+  animation: pulse-glow 2.4s ease-in-out infinite;
+}
+
+.lesson-step-pop {
+  animation: step-pop 0.28s ease-out both;
+}
+
+.step-navigator-wrap {
+  margin-bottom: 12px;
+}
+
+.step-navigator-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 6px;
+}
+
+.step-nav-btn {
+  border: 2px solid rgba(31, 50, 66, 0.15);
+  border-radius: 10px;
+  background: #fff;
+  color: #1f3242;
+  font-weight: 800;
+  padding: 8px 0;
+  cursor: pointer;
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.step-nav-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 5px 10px rgba(31, 50, 66, 0.1);
+}
+
+.step-nav-quiz {
+  background: #43b04a;
+  color: #fff;
+  border-color: #35923b;
+}
+
+.step-nav-current {
+  outline: 3px solid rgba(43, 112, 201, 0.24);
+}
+
+.step-nav-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.question-card {
+  transition: transform 0.18s ease;
+}
+
+.question-card:hover {
+  transform: translateY(-1px);
+}
+
+.molingo-btn {
+  transition:
+    transform 0.12s ease,
+    filter 0.12s ease,
+    box-shadow 0.12s ease;
+}
+
+.molingo-btn:hover {
+  transform: translateY(-2px) scale(1.02);
+  filter: brightness(1.05);
+  box-shadow: 0 8px 16px rgba(31, 50, 66, 0.16);
+}
+
+.molingo-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+.molingo-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.quiz-option {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease,
+    background-color 0.12s ease;
+}
+
+.quiz-option:hover {
+  transform: translateX(4px);
+  box-shadow: 0 6px 12px rgba(31, 50, 66, 0.12);
+}
+
+.quiz-correct {
+  animation: step-pop 0.24s ease-out both;
+}
+
+.quiz-wrong {
+  animation: wrong-shake 0.24s ease-in-out both;
+}
+
+@keyframes wrong-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  25% {
+    transform: translateX(-3px);
+  }
+
+  75% {
+    transform: translateX(3px);
+  }
+}
+
+.feedback-card {
+  animation: step-pop 0.24s ease-out both;
+}
+
+.celebration-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(12, 26, 38, 0.38);
+  backdrop-filter: blur(2px);
+}
+
+.celebration-card {
+  padding: 24px 22px;
+  width: min(92%, 460px);
+  text-align: center;
+  border-width: 3px;
+  border-color: rgba(255, 216, 95, 0.72);
+}
+
+.celebration-confetti-layer {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.celebration-confetti {
+  position: absolute;
+  top: -12px;
+  border-radius: 2px;
+  opacity: 0;
+  animation-name: confetti-fall;
+  animation-timing-function: linear;
+  animation-fill-mode: both;
+}
+
 @media (max-width: 768px) {
   main {
     padding: 16px 12px 32px;

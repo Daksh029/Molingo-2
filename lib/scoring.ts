@@ -1,6 +1,7 @@
 import { getLessonById } from "@/lib/curriculum";
 import { SpeechStatus } from "@/lib/types";
 import { jaccardSimilarity, normalizeForMatch } from "@/lib/text";
+import { containsGujarati, transliterateGujaratiToLatin } from "@/lib/transliterate";
 
 export type EvaluationResult = {
   status: SpeechStatus;
@@ -27,7 +28,11 @@ export function evaluatePronunciation(lessonItemId: string, transcript: string):
     };
   }
 
-  const normalizedTranscript = normalizeForMatch(transcript);
+  const transcriptForMatch = containsGujarati(transcript)
+    ? transliterateGujaratiToLatin(transcript)
+    : transcript;
+
+  const normalizedTranscript = normalizeForMatch(transcriptForMatch);
   const score = scoreAgainstVariants(normalizedTranscript, lesson.acceptable_variants);
 
   if (score >= 0.88) {

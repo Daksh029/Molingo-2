@@ -3,6 +3,15 @@
 import Link from "next/link";
 import { Unit } from "@/lib/types";
 
+const mascotEmojiByUnit: Record<number, string> = {
+  1: "🦦",
+  2: "🐼",
+  3: "🦊",
+  4: "🐰",
+  5: "🐨",
+  6: "🐧"
+};
+
 type UnitProgress = {
   unitId: number;
   completed: number;
@@ -24,7 +33,7 @@ export function UnitPath({ units, progress }: { units: Unit[]; progress: UnitPro
         {units.map((unit, index) => {
           const status = progress.find((entry) => entry.unitId === unit.id);
           const unlocked = status?.unlocked ?? unit.id === 1;
-          const done = status ? `${status.completed}/${status.total}` : "0/20";
+          const done = status ? `${status.completed}/${status.total}` : "0/4";
 
           return (
             <Link
@@ -42,7 +51,7 @@ export function UnitPath({ units, progress }: { units: Unit[]; progress: UnitPro
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontWeight: 800, fontSize: 21 }}>{unit.mascot.split(" ")[0]}</span>
+                <span style={{ fontWeight: 800, fontSize: 28 }}>{mascotEmojiByUnit[unit.id] ?? "🐾"}</span>
                 <span
                   style={{
                     background: unit.color,

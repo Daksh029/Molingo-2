@@ -20,14 +20,14 @@ export default async function HomePage() {
             <div style={{ fontSize: 34, fontWeight: 800 }}>{progress.streakDays} days</div>
           </div>
           <div>
-            <div style={{ fontWeight: 700, opacity: 0.75 }}>Mastery</div>
+            <div style={{ fontWeight: 700, opacity: 0.75 }}>Checkpoints</div>
             <div style={{ fontSize: 34, fontWeight: 800 }}>
               {progress.completedItems}/{progress.totalItems}
             </div>
           </div>
           <div>
-            <div style={{ fontWeight: 700, opacity: 0.75 }}>Focus</div>
-            <div style={{ fontSize: 34, fontWeight: 800 }}>Speak</div>
+            <div style={{ fontWeight: 700, opacity: 0.75 }}>Unlocks By</div>
+            <div style={{ fontSize: 34, fontWeight: 800 }}>Quizzes</div>
           </div>
         </div>
       </section>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { units } from "@/lib/curriculum";
 import { getLearnerIdFromHeaders } from "@/lib/identity";
+import { getQuizCheckpointIdsForUnit } from "@/lib/progression";
 import { getProgressSummary } from "@/lib/storage";
 
 export async function GET(request: Request) {
@@ -13,7 +14,7 @@ export async function GET(request: Request) {
       ...unit,
       unlocked: unitProgress?.unlocked ?? unit.id === 1,
       completed: unitProgress?.completed ?? 0,
-      total: unitProgress?.total ?? 20
+      total: unitProgress?.total ?? getQuizCheckpointIdsForUnit(unit.id).length
     };
   });
 

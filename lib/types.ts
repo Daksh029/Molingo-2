@@ -36,6 +36,13 @@ export interface AttemptInput {
   feedback: string;
 }
 
+export interface QuizResultInput {
+  learnerId: string;
+  unitId: number;
+  sourceLessonItemId: string;
+  isCorrect: boolean;
+}
+
 export interface EvaluateInput {
   lessonItemId: string;
   audioBase64?: string;

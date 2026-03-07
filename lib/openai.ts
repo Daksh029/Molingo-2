@@ -8,13 +8,20 @@ function getApiKey(): string {
   return key;
 }
 
-export async function transcribeAudioFromBase64(audioBase64: string, mimeType: string): Promise<string> {
+export async function transcribeAudioFromBase64(
+  audioBase64: string,
+  mimeType: string,
+  phraseHint?: string
+): Promise<string> {
   const apiKey = getApiKey();
   const byteChars = Buffer.from(audioBase64, "base64");
   const formData = new FormData();
   const ext = mimeType.includes("webm") ? "webm" : "wav";
   formData.append("file", new Blob([byteChars], { type: mimeType }), `speech.${ext}`);
   formData.append("model", "gpt-4o-mini-transcribe");
+  if (phraseHint) {
+    formData.append("prompt", `Expected Gujarati phrase (romanized): ${phraseHint}`);
+  }
 
   const response = await fetch(`${OPENAI_BASE_URL}/audio/transcriptions`, {
     method: "POST",

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { recordAttempt, getProgressSummary } from "@/lib/storage";
+import { getProgressSummary, recordAttempt, recordQuizResult } from "@/lib/storage";
 
 describe("progress summary", () => {
-  it("tracks mastery and weak phrases from attempts", async () => {
+  it("unlocks units using quiz checkpoints and keeps speaking as feedback only", async () => {
     const learnerId = `test-${Date.now()}`;
 
     await recordAttempt({
@@ -25,9 +25,24 @@ describe("progress summary", () => {
       feedback: "great"
     });
 
+    await recordQuizResult({ learnerId, unitId: 1, sourceLessonItemId: "u1-l05", isCorrect: true });
+    await recordQuizResult({ learnerId, unitId: 1, sourceLessonItemId: "u1-l10", isCorrect: true });
+    await recordQuizResult({ learnerId, unitId: 1, sourceLessonItemId: "u1-l15", isCorrect: true });
+    await recordQuizResult({ learnerId, unitId: 1, sourceLessonItemId: "u1-l20", isCorrect: true });
+
     const summary = await getProgressSummary(learnerId);
-    expect(summary.totalItems).toBe(120);
+    expect(summary.totalItems).toBe(24);
+    expect(summary.completedItems).toBe(4);
     expect(summary.streakDays).toBeGreaterThanOrEqual(1);
+
+    const unit1 = summary.unitProgress.find((unit) => unit.unitId === 1);
+    const unit2 = summary.unitProgress.find((unit) => unit.unitId === 2);
+    const unit3 = summary.unitProgress.find((unit) => unit.unitId === 3);
+    expect(unit1?.completed).toBe(4);
+    expect(unit1?.total).toBe(4);
+    expect(unit2?.unlocked).toBe(true);
+    expect(unit3?.unlocked).toBe(false);
+
     expect(summary.weakPhrases.length).toBeGreaterThanOrEqual(1);
   });
 });

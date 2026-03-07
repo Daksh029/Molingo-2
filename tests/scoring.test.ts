@@ -19,4 +19,9 @@ describe("pronunciation scoring", () => {
     expect(result.status).toBe("retry");
     expect(result.nextAction).toBe("retry");
   });
+
+  it("handles Gujarati script by transliterating before scoring", () => {
+    const result = evaluatePronunciation("u1-l01", "કેમ છો");
+    expect(result.status).toBe("pass");
+  });
 });
