@@ -1,0 +1,74 @@
+:root {
+  --sky: #d2f2ff;
+  --mint: #b7f4cd;
+  --grass: #43b04a;
+  --sun: #ffd85f;
+  --ink: #1f3242;
+  --paper: #ffffff;
+  --danger: #ff4b4b;
+  --shadow: rgba(20, 62, 89, 0.16);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(255, 216, 95, 0.45), transparent 35%),
+    radial-gradient(circle at 82% 15%, rgba(183, 244, 205, 0.9), transparent 40%),
+    linear-gradient(180deg, #f6fcff 0%, #e7f9ff 100%);
+  color: var(--ink);
+  font-family: "Avenir Next", "Nunito Sans", "Segoe UI", sans-serif;
+}
+
+h1,
+h2,
+h3,
+button {
+  font-family: "Trebuchet MS", "Avenir Next Condensed", "Verdana", sans-serif;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+main {
+  max-width: 980px;
+  margin: 0 auto;
+  padding: 24px 16px 48px;
+}
+
+.molingo-card {
+  background: var(--paper);
+  border: 3px solid rgba(31, 50, 66, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 14px 24px var(--shadow);
+}
+
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-pop {
+  animation: pop-in 0.35s ease-out both;
+}
+
+@media (max-width: 768px) {
+  main {
+    padding: 16px 12px 32px;
+  }
+}
