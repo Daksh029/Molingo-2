@@ -101,6 +101,8 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const [recording, setRecording] = useState(false);
+  const [speechBusy, setSpeechBusy] = useState(false);
+  const [savingQuiz, setSavingQuiz] = useState(false);
   const [result, setResult] = useState<EvalResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [queueCount, setQueueCount] = useState(0);
@@ -112,6 +114,8 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
   const [celebrationLine, setCelebrationLine] = useState<string>("Great job Morgan!");
   const [confettiSeed, setConfettiSeed] = useState(0);
 
+  const mountedRef = useRef(true);
+  const speechBusyRef = useRef(false);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioStreamRef = useRef<MediaStream | null>(null);
   const speechRecognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -251,25 +255,30 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
   }, [flushQueue, flushQuizQueue]);
 
   useEffect(() => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
       return;
     }
 
     window.speechSynthesis.getVoices();
   }, []);
 
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
       transitionTimeoutRef.current && clearTimeout(transitionTimeoutRef.current);
       speechRecognitionRef.current?.stop();
-      mediaRecorderRef.current?.stop();
+      if (mediaRecorderRef.current) {
+        mediaRecorderRef.current.onstop = null;
+        if (mediaRecorderRef.current.state !== "inactive") mediaRecorderRef.current.stop();
+      }
       audioStreamRef.current?.getTracks().forEach((track) => track.stop());
-    },
-    []
-  );
+      window.speechSynthesis?.cancel();
+    };
+  }, []);
 
   const browserSpeak = useCallback((text: string) => {
-    if (typeof window === "undefined" || !("speechSynthesis" in window)) {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
       throw new Error("Audio is unavailable in this browser.");
     }
 
@@ -277,6 +286,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
     utterance.lang = "gu-IN";
     utterance.rate = 0.92;
     utterance.pitch = 1.04;
+    utterance.onerror = () => setError("Audio could not play. Your browser may not have a Gujarati voice installed. You can still read the phrase and continue.");
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   }, []);
@@ -303,6 +313,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
         isCorrect
       };
 
+      setSavingQuiz(true);
       try {
         const response = await fetch("/api/progress/quiz", {
           method: "POST",
@@ -315,12 +326,16 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
 
         if (!response.ok) {
           enqueueQuizResult(payload);
+        } else {
+          router.refresh();
         }
       } catch {
         enqueueQuizResult(payload);
+      } finally {
+        if (mountedRef.current) setSavingQuiz(false);
       }
     },
-    [enqueueQuizResult, learnerId, unit.id]
+    [enqueueQuizResult, learnerId, router, unit.id]
   );
 
   const startSpeechRecognition = useCallback(() => {
@@ -346,8 +361,11 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
       }
       browserTranscriptRef.current = transcripts.join(" ").trim();
     };
-    recognition.start();
+    recognition.onerror = () => {
+      browserTranscriptRef.current = "";
+    };
     speechRecognitionRef.current = recognition;
+    recognition.start();
   }, []);
 
   const submitEvaluation = useCallback(
@@ -388,6 +406,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
       }
 
       const data = body as EvalResponse;
+      if (!mountedRef.current) return;
       setResult(data);
 
       const attemptPayload = {
@@ -420,25 +439,28 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
   );
 
   const startRecording = useCallback(async () => {
-    if (!currentLessonItem || showCelebration) {
+    if (!currentLessonItem || showCelebration || speechBusyRef.current) {
       return;
     }
 
+    speechBusyRef.current = true;
+    setSpeechBusy(true);
     setError(null);
     setResult(null);
     browserTranscriptRef.current = "";
     chunksRef.current = [];
 
-    startSpeechRecognition();
-
-    if (typeof window === "undefined" || !("MediaRecorder" in window)) {
-      setError("Audio recording is not supported in this browser.");
-      return;
-    }
-
     try {
+      if (!("MediaRecorder" in window) || !navigator.mediaDevices?.getUserMedia) {
+        throw new Error("Audio recording is not supported in this browser. You can still read the phrase and continue.");
+      }
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      if (!mountedRef.current) {
+        stream.getTracks().forEach((track) => track.stop());
+        return;
+      }
       audioStreamRef.current = stream;
+      try { startSpeechRecognition(); } catch { speechRecognitionRef.current = null; browserTranscriptRef.current = ""; }
       const recorder = new MediaRecorder(stream);
 
       recorder.ondataavailable = (event) => {
@@ -448,6 +470,9 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
       };
 
       recorder.onstop = async () => {
+        stream.getTracks().forEach((track) => track.stop());
+        audioStreamRef.current = null;
+        setRecording(false);
         try {
           speechRecognitionRef.current?.stop();
           await new Promise((resolve) => setTimeout(resolve, 300));
@@ -458,22 +483,30 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
             audioBase64 = await blobToBase64(blob);
           }
 
+          if (!mountedRef.current) return;
           const transcript = browserTranscriptRef.current.trim();
           await submitEvaluation(currentLessonItem, audioBase64, transcript);
         } catch (err) {
-          setError(err instanceof Error ? err.message : "Could not evaluate pronunciation.");
+          if (mountedRef.current) setError(err instanceof Error ? err.message : "Could not evaluate pronunciation.");
         } finally {
-          audioStreamRef.current?.getTracks().forEach((track) => track.stop());
-          audioStreamRef.current = null;
-          setRecording(false);
+          speechBusyRef.current = false;
+          if (mountedRef.current) { setRecording(false); setSpeechBusy(false); }
         }
       };
 
       mediaRecorderRef.current = recorder;
       recorder.start();
       setRecording(true);
-    } catch {
-      setError("Microphone permission is required for speaking practice.");
+    } catch (err) {
+      speechRecognitionRef.current?.stop();
+      audioStreamRef.current?.getTracks().forEach((track) => track.stop());
+      audioStreamRef.current = null;
+      speechBusyRef.current = false;
+      if (mountedRef.current) {
+        setRecording(false);
+        setSpeechBusy(false);
+        setError(err instanceof Error && err.name !== "NotAllowedError" ? err.message : "Microphone permission is required for speaking practice. You can still continue without recording.");
+      }
     }
   }, [currentLessonItem, showCelebration, startSpeechRecognition, submitEvaluation]);
 
@@ -495,7 +528,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
 
   const chooseQuizAnswer = useCallback(
     (choice: string) => {
-      if (!currentStep || currentStep.kind !== "quiz" || showCelebration) {
+      if (!currentStep || currentStep.kind !== "quiz" || showCelebration || savingQuiz || quizSolved) {
         return;
       }
 
@@ -512,7 +545,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
         setQuizFeedback(`Not quite. Correct answer: ${currentStep.correctAnswer}`);
       }
     },
-    [currentStep, showCelebration, submitQuizProgress]
+    [currentStep, showCelebration, savingQuiz, quizSolved, submitQuizProgress]
   );
 
   const clearStepFeedback = useCallback(() => {
@@ -525,7 +558,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
 
   const goToStep = useCallback(
     (targetIndex: number) => {
-      if (showCelebration) {
+      if (showCelebration || speechBusyRef.current || savingQuiz) {
         return;
       }
 
@@ -533,7 +566,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
       const clamped = Math.max(0, Math.min(targetIndex, steps.length - 1));
       setIndex(clamped);
     },
-    [clearStepFeedback, showCelebration, steps.length]
+    [clearStepFeedback, showCelebration, savingQuiz, steps.length]
   );
 
   const goBack = useCallback(() => {
@@ -541,7 +574,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
   }, [goToStep, index]);
 
   const nextStep = useCallback(() => {
-    if (showCelebration) {
+    if (showCelebration || speechBusyRef.current || savingQuiz || (currentStep?.kind === "quiz" && !quizSolved)) {
       return;
     }
 
@@ -566,7 +599,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
     }
 
     setIndex((prev) => Math.min(prev + 1, steps.length - 1));
-  }, [clearStepFeedback, currentStep, index, quizSolved, routeToNextPath, showCelebration, steps.length]);
+  }, [clearStepFeedback, currentStep, index, quizSolved, routeToNextPath, showCelebration, savingQuiz, steps.length]);
 
   if (!currentStep) {
     return (
@@ -652,7 +685,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
                 type="button"
                 className={navClass}
                 onClick={() => goToStep(stepIndex)}
-                disabled={showCelebration}
+                disabled={showCelebration || speechBusy || savingQuiz}
                 title={isQuiz ? `Question ${stepIndex + 1}: test checkpoint` : `Question ${stepIndex + 1}`}
               >
                 {stepIndex + 1}
@@ -730,6 +763,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
                     key={choice}
                     type="button"
                     onClick={() => chooseQuizAnswer(choice)}
+                    disabled={savingQuiz || quizSolved || showCelebration}
                     className={quizClass}
                     style={{
                       borderRadius: 12,
@@ -747,7 +781,7 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
                 );
               })}
             </div>
-            {quizFeedback ? <p style={{ marginBottom: 0, fontWeight: 700 }}>{quizFeedback}</p> : null}
+            {quizFeedback ? <p role="status" style={{ marginBottom: 0, fontWeight: 700 }}>{quizFeedback}</p> : null}
           </div>
         )}
       </div>
@@ -758,20 +792,20 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
           className="molingo-btn"
           style={buttonStyle("#2b70c9")}
           type="button"
-          disabled={index === 0 || showCelebration}
+          disabled={index === 0 || showCelebration || speechBusy || savingQuiz}
         >
           Back
         </button>
 
         {currentStep.kind === "learn" ? (
           <>
-            <button onClick={playTargetAudio} className="molingo-btn" style={buttonStyle("#1cb0f6")} type="button">
+            <button disabled={speechBusy || showCelebration} onClick={playTargetAudio} className="molingo-btn" style={buttonStyle("#1cb0f6")} type="button">
               Play Audio
             </button>
 
             {!recording ? (
-              <button onClick={() => void startRecording()} className="molingo-btn" style={buttonStyle("#43b04a")} type="button">
-                Record & Speak
+              <button disabled={speechBusy || showCelebration} onClick={() => void startRecording()} className="molingo-btn" style={buttonStyle("#43b04a")} type="button">
+                {speechBusy ? "Preparing / checking speech…" : "Record & Speak"}
               </button>
             ) : (
               <button onClick={stopRecording} className="molingo-btn" style={buttonStyle("#ff4b4b")} type="button">
@@ -786,13 +820,15 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
           className="molingo-btn"
           style={buttonStyle("#ff9600")}
           type="button"
-          disabled={!canContinue || showCelebration}
+          disabled={!canContinue || showCelebration || speechBusy || savingQuiz}
         >
           {index === steps.length - 1 ? (unit.id < 6 ? "Continue to Next Path" : "Finish") : "Continue"}
         </button>
       </div>
 
-      {error ? <p style={{ color: "#ff4b4b", fontWeight: 700, marginTop: 14 }}>{error}</p> : null}
+      {speechBusy && !recording ? <p role="status">Preparing or checking your recording…</p> : null}
+      {savingQuiz ? <p role="status">Saving checkpoint…</p> : null}
+      {error ? <p role="alert" style={{ color: "#ff4b4b", fontWeight: 700, marginTop: 14 }}>{error}</p> : null}
 
       {result ? (
         <div

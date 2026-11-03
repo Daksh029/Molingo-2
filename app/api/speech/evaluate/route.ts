@@ -40,7 +40,7 @@ export async function POST(request: Request) {
         return NextResponse.json(
           {
             error:
-              "Speech scoring requires OPENAI_API_KEY or browser transcript fallback. Use a Chromium browser and retry."
+              "Speech scoring is not connected yet, and your browser did not capture a transcript. You can continue without scoring or try a browser with speech recognition."
           },
           { status: 503 }
         );
@@ -62,3 +62,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: message }, { status: 400 });
   }
 }
+

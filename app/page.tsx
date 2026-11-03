@@ -3,6 +3,8 @@ import { UnitPath } from "@/components/UnitPath";
 import { units } from "@/lib/curriculum";
 import { getProgressSummary } from "@/lib/storage";
 
+export const dynamic = "force-dynamic";
+
 async function loadProgress() {
   return getProgressSummary("molingo-local-learner");
 }
@@ -35,3 +37,4 @@ export default async function HomePage() {
     </main>
   );
 }
+
