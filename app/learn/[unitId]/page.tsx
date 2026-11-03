@@ -22,7 +22,8 @@ export default async function UnitPage({ params }: { params: Promise<{ unitId: s
       <Link href="/" style={{ fontWeight: 700, display: "inline-block", marginBottom: 12 }}>
         Back to Path
       </Link>
-      <LessonPlayer unit={unit} items={lessons} />
+      <LessonPlayer key={unit.id} unit={unit} items={lessons} />
     </main>
   );
 }
+

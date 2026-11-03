@@ -40,7 +40,7 @@ function pickDistinct(items: LessonItem[], seed: number, count: number, excluded
       picked.push(item);
       excluded.add(item.id);
     }
-    cursor += 3;
+    cursor += 1;
   }
 
   return picked;
@@ -81,3 +81,4 @@ export function buildLessonFlow(items: LessonItem[], quizEvery = 5): LessonFlowS
 
   return steps;
 }
+

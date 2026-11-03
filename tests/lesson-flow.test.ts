@@ -22,3 +22,11 @@ describe("lesson flow", () => {
     expect(firstQuiz.choices).toHaveLength(3);
   });
 });
+
+
+// A pool divisible by three used to revisit the same distractors forever.
+it("builds quiz choices when the distractor pool has six entries", () => {
+  const flow = buildLessonFlow(getLessonsByUnit(1).slice(0, 7));
+  const quiz = flow.find(step => step.kind === "quiz");
+  expect(quiz?.kind === "quiz" && quiz.choices.length).toBe(3);
+});
