@@ -1,6 +1,7 @@
 "use client";
 
 import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { ChapterAnimal } from "@/components/ChapterAnimal";
 import { useRouter } from "next/navigation";
 import { buildLessonFlow } from "@/lib/lesson-flow";
 import { LessonItem, SpeechStatus, Unit } from "@/lib/types";
@@ -45,15 +46,6 @@ type ConfettiPiece = {
   drift: number;
   size: number;
   color: string;
-};
-
-const mascotEmoji: Record<number, string> = {
-  1: "🦦",
-  2: "🐼",
-  3: "🦊",
-  4: "🐰",
-  5: "🐨",
-  6: "🐧"
 };
 
 const praiseLines = [
@@ -585,7 +577,6 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
   }
 
   const canContinue = currentStep.kind === "learn" || quizSolved;
-  const mascot = mascotEmoji[unit.id] ?? "🐾";
 
   return (
     <section className="molingo-card animate-pop lesson-shell" style={{ padding: 20, position: "relative", overflow: "hidden" }}>
@@ -684,8 +675,8 @@ export function LessonPlayer({ unit, items }: { unit: Unit; items: LessonItem[] 
           border: "2px solid rgba(31, 50, 66, 0.1)"
         }}
       >
-        <div className="mascot-bounce" style={{ fontSize: 52, lineHeight: 1 }}>
-          {mascot}
+        <div className="mascot-bounce" style={{ width: 132, flexShrink: 0, lineHeight: 1 }}>
+          <ChapterAnimal unitId={unit.id} />
         </div>
         <div>
           <div style={{ fontWeight: 800, fontSize: 18 }}>{unit.mascot} is here to coach you.</div>
@@ -858,3 +849,4 @@ function buttonStyle(color: string): CSSProperties {
     cursor: "pointer"
   };
 }
+
